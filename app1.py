@@ -5,15 +5,15 @@ from flask_login import UserMixin, login_user, LoginManager, login_required, log
 from flask_bcrypt import Bcrypt
 from werkzeug.utils import secure_filename
 from database import *
+from ImageProcessing import *
 import cv2 
 import os
 import aiapi
 
-# Define constants
-UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'png', 'webp',  'jpg', 'jpeg', 'gif'}
+
 
 # Initialize Flask app
+
 # db = SQLAlchemy()  # SQLAlchemy initialized in database.py
 
 app = Flask(__name__)
@@ -34,46 +34,7 @@ login_manager.login_view = "login"
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Define User model
-# class User(db.Model, UserMixin):
-#     id = db.Column(db.Integer, primary_key=True)
-#     username = db.Column(db.String(20), nullable=False, unique=True)
-#     password = db.Column(db.String(80), nullable=False)
-#     email = db.Column(db.String(80), nullable=True)
-#     phoneNumber = db.Column(db.String(15), nullable = True)
-
-# # Define registration form
-# class RegisterForm(FlaskForm):
-#     # Form fields with validators and placeholders
-#     username = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})
-#     password = PasswordField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Password"})
-#     email = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Email"})
-#     phoneNumber = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "PhoneNumber"})
-#     submit = SubmitField("Register")
-
-#     # Custom validation for username uniqueness
-#     def validate_username(self, username):
-#         existing_user_username = User.query.filter_by(username=username.data).first()
-#         if existing_user_username:
-#             flash("That username already exists. Please choose a different one.")
-#             raise ValidationError('That username already exists. Please choose a different one.')
-
-# # Define login form
-# class LoginForm(FlaskForm):
-#     # Form fields with validators and placeholders
-#     username = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})
-#     password = PasswordField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Password"})
-#     submit = SubmitField("Login")
-
-#     def validate_username(self, username):
-#         # Check if the user exists in the database
-#         existing_user = User.query.filter_by(username=username.data).first()
-
-#         if not existing_user:
-#             # Flash a message if the user doesn't exist
-#             flash("User does not exist. Please sign up.")
-#             raise ValidationError('User does not exist. Please sign up.')
-# # Home route
+# Home route
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -142,33 +103,7 @@ def register():
 
     return render_template('register.html', form=form)
 
-# Helper function to check if file extension is allowed
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Helper function to process uploaded images based on the selected operation
-def processImage(filename, operation):
-    print(f"the operation is {operation} and filename is {filename}")
-    img = cv2.imread(f"uploads/{filename}")
-    match operation:
-        case "cgray":
-            imgProcessed = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            newFilename = f"static/{filename}"
-            cv2.imwrite(f"static/{filename}", imgProcessed)
-            return newFilename
-        case "cwebp":
-            newFilename = f"static/{filename.split('.')[0]}.webp"
-            cv2.imwrite(newFilename, img)
-            return newFilename
-        case "cjpg":
-            newFilename = f"static/{filename.split('.')[0]}.jpg"
-            cv2.imwrite(newFilename, img)
-            return newFilename
-        case "cpng":
-            newFilename = f"static/{filename.split('.')[0]}.png"
-            cv2.imwrite(newFilename, img)
-            return newFilename
-        
 @app.route('/about')
 def about():
     return render_template('about.html')
