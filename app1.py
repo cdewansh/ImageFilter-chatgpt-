@@ -1,22 +1,21 @@
 # Import necessary modules
 import sqlite3
-from flask import Flask, render_template, url_for, redirect, flash, request
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, render_template, url_for, redirect, flash, request,jsonify
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
-from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import InputRequired, Length, ValidationError
 from flask_bcrypt import Bcrypt
 from werkzeug.utils import secure_filename
-import cv2
+from database import *
+import cv2 
 import os
+import aiapi
 
 # Define constants
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'webp',  'jpg', 'jpeg', 'gif'}
 
 # Initialize Flask app
-db = SQLAlchemy()  # SQLAlchemy initialized here
+# db = SQLAlchemy()  # SQLAlchemy initialized in database.py
+
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
 
@@ -36,45 +35,45 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # Define User model
-class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20), nullable=False, unique=True)
-    password = db.Column(db.String(80), nullable=False)
-    email = db.Column(db.String(80), nullable=True)
-    phoneNumber = db.Column(db.String(15), nullable = True)
+# class User(db.Model, UserMixin):
+#     id = db.Column(db.Integer, primary_key=True)
+#     username = db.Column(db.String(20), nullable=False, unique=True)
+#     password = db.Column(db.String(80), nullable=False)
+#     email = db.Column(db.String(80), nullable=True)
+#     phoneNumber = db.Column(db.String(15), nullable = True)
 
-# Define registration form
-class RegisterForm(FlaskForm):
-    # Form fields with validators and placeholders
-    username = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})
-    password = PasswordField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Password"})
-    email = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Email"})
-    phoneNumber = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "PhoneNumber"})
-    submit = SubmitField("Register")
+# # Define registration form
+# class RegisterForm(FlaskForm):
+#     # Form fields with validators and placeholders
+#     username = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})
+#     password = PasswordField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Password"})
+#     email = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Email"})
+#     phoneNumber = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "PhoneNumber"})
+#     submit = SubmitField("Register")
 
-    # Custom validation for username uniqueness
-    def validate_username(self, username):
-        existing_user_username = User.query.filter_by(username=username.data).first()
-        if existing_user_username:
-            flash("That username already exists. Please choose a different one.")
-            raise ValidationError('That username already exists. Please choose a different one.')
+#     # Custom validation for username uniqueness
+#     def validate_username(self, username):
+#         existing_user_username = User.query.filter_by(username=username.data).first()
+#         if existing_user_username:
+#             flash("That username already exists. Please choose a different one.")
+#             raise ValidationError('That username already exists. Please choose a different one.')
 
-# Define login form
-class LoginForm(FlaskForm):
-    # Form fields with validators and placeholders
-    username = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})
-    password = PasswordField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Password"})
-    submit = SubmitField("Login")
+# # Define login form
+# class LoginForm(FlaskForm):
+#     # Form fields with validators and placeholders
+#     username = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})
+#     password = PasswordField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Password"})
+#     submit = SubmitField("Login")
 
-    def validate_username(self, username):
-        # Check if the user exists in the database
-        existing_user = User.query.filter_by(username=username.data).first()
+#     def validate_username(self, username):
+#         # Check if the user exists in the database
+#         existing_user = User.query.filter_by(username=username.data).first()
 
-        if not existing_user:
-            # Flash a message if the user doesn't exist
-            flash("User does not exist. Please sign up.")
-            raise ValidationError('User does not exist. Please sign up.')
-# Home route
+#         if not existing_user:
+#             # Flash a message if the user doesn't exist
+#             flash("User does not exist. Please sign up.")
+#             raise ValidationError('User does not exist. Please sign up.')
+# # Home route
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -137,6 +136,8 @@ def register():
         new_user = User(username=form.username.data, password=hashed_password, email=form.email.data, phoneNumber=form.phoneNumber.data)
         db.session.add(new_user)
         db.session.commit()
+        #For closing the db
+        db.session.close()
         return redirect(url_for('login'))
 
     return render_template('register.html', form=form)
@@ -212,6 +213,16 @@ def delete_user(username):
     conn.close()
 
     return redirect(url_for('home'))
+
+@app.route('/chat',methods =['POST','GET'])
+@login_required
+def chat():
+    if request.method == 'POST':
+        prompt = request.form['prompt']
+        res={}
+        res['answer'] = aiapi.generateChatResponse(prompt)
+        return jsonify(res),200
+    return render_template('chat.html',**locals())
 
 
 
