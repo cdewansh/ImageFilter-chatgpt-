@@ -17,10 +17,10 @@ def generateChatResponse(prompt):
     try:
         answer = response['choices'][0]['message']['content'].replace('\n','<br>')
         endtime = time.time()
-        response = endtime - starttime
+        responsetime = endtime - starttime
     except:
         answer = 'Oops you beat the AI,try a different question , if the problem persists , come back later.'
 
-    return answer + response
+    return answer + f" Response Time: {responsetime}"
 
 
