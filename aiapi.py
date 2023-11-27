@@ -22,6 +22,6 @@ def generateChatResponse(prompt):
     except:
         answer = 'Oops you beat the AI,try a different question , if the problem persists , come back later.'
 
-    return answer + f" Response Time: {response_time}"
+    return answer + f" Response Time: {response_time}."
 
 
